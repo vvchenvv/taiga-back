@@ -21,6 +21,7 @@
 - Import/Export:
     - Gzip export/import support.
     - Export performance improvements.
+- Add filter by email domain registration and invitation by setting.
 
 ### Misc
 - [API] Improve performance of some calls over list.
