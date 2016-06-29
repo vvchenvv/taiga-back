@@ -179,14 +179,10 @@ class GenericAPIView(pagination.PaginationMixin,
 
         # Situations where the validator is the rest framework serializer
         if validator_class is None and serializer_class is not None:
-            print("xxx")
             return serializer_class
 
         if validator_class is not None:
-            print("yyy")
             return validator_class
-
-        print("1111111111111")
 
         class DefaultValidator(self.model_validator_class):
             class Meta:

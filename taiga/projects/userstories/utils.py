@@ -46,10 +46,15 @@ def attach_role_points(queryset, as_field="role_points_attr"):
     :return: Queryset object with the additional `as_field` field.
     """
     model = queryset.model
-    sql = """SELECT json_agg((userstories_rolepoints.role_id, userstories_rolepoints.points_id))
+    sql = """SELECT FORMAT('{{%%s}}',
+                           STRING_AGG(format(
+                                '"%%s":%%s',
+                                TO_JSON(userstories_rolepoints.role_id),
+                                TO_JSON(userstories_rolepoints.points_id)
+                            ), ',')
+                          )::json
             	    FROM userstories_rolepoints
                     WHERE userstories_rolepoints.user_story_id = {tbl}.id"""
-
     sql = sql.format(tbl=model._meta.db_table)
     queryset = queryset.extra(select={as_field: sql})
     return queryset

@@ -30,7 +30,7 @@ from taiga.projects.mixins.serializers import ListOwnerExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListAssignedToExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListStatusExtraInfoSerializerMixin
 from taiga.projects.notifications.mixins import EditableWatchedResourceModelSerializer
-from taiga.projects.notifications.mixins import ListWatchedResourceModelSerializer
+from taiga.projects.notifications.mixins import WatchedResourceModelSerializer
 from taiga.projects.notifications.validators import WatchersValidator
 from taiga.projects.serializers import BasicTaskStatusSerializerSerializer
 from taiga.mdrender.service import render as mdrender
@@ -38,7 +38,6 @@ from taiga.projects.tagging.fields import TagsAndTagsColorsField
 from taiga.projects.tasks.validators import TaskExistsValidator
 from taiga.projects.validators import ProjectExistsValidator
 from taiga.projects.votes.mixins.serializers import VoteResourceSerializerMixin
-from taiga.projects.votes.mixins.serializers import ListVoteResourceSerializerMixin
 
 from taiga.users.serializers import UserBasicInfoSerializer
 from taiga.users.services import get_photo_or_gravatar_url
@@ -48,10 +47,10 @@ from . import models
 
 import serpy
 
-
-class TaskSerializer(WatchersValidator, VoteResourceSerializerMixin, EditableWatchedResourceModelSerializer,
+#TODO: VoteResourceSerializerMixin,
+class TaskSerializer(WatchersValidator, EditableWatchedResourceModelSerializer,
                      serializers.ModelSerializer):
-                     
+
     tags = TagsAndTagsColorsField(default=[], required=False)
     external_reference = PgArrayField(required=False)
     comment = serializers.SerializerMethodField("get_comment")
@@ -86,7 +85,7 @@ class TaskSerializer(WatchersValidator, VoteResourceSerializerMixin, EditableWat
         return obj.status is not None and obj.status.is_closed
 
 
-class TaskListSerializer(ListVoteResourceSerializerMixin, ListWatchedResourceModelSerializer,
+class TaskListSerializer(VoteResourceSerializerMixin, WatchedResourceModelSerializer,
                          ListOwnerExtraInfoSerializerMixin, ListAssignedToExtraInfoSerializerMixin,
                          ListStatusExtraInfoSerializerMixin, ListBasicAttachmentsInfoSerializerMixin,
                          serializers.LightSerializer):

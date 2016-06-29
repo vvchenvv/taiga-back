@@ -186,7 +186,10 @@ class WatchedModelMixin(object):
         return frozenset(filter(is_not_none, participants))
 
 
-class BaseWatchedResourceModelSerializer(object):
+class WatchedResourceModelSerializer(serpy.Serializer):
+    is_watcher = serpy.MethodField("get_is_watcher")
+    total_watchers = serpy.MethodField("get_total_watchers")
+
     def get_is_watcher(self, obj):
         # The "is_watcher" attribute is attached in the get_queryset of the viewset.
         if "request" in self.context:
@@ -200,17 +203,7 @@ class BaseWatchedResourceModelSerializer(object):
         return getattr(obj, "total_watchers", 0) or 0
 
 
-class WatchedResourceModelSerializer(BaseWatchedResourceModelSerializer, serializers.ModelSerializer):
-    is_watcher = serializers.SerializerMethodField("get_is_watcher")
-    total_watchers = serializers.SerializerMethodField("get_total_watchers")
-
-
-class ListWatchedResourceModelSerializer(BaseWatchedResourceModelSerializer, serpy.Serializer):
-    is_watcher = serpy.MethodField("get_is_watcher")
-    total_watchers = serpy.MethodField("get_total_watchers")
-
-
-class EditableWatchedResourceModelSerializer(WatchedResourceModelSerializer):
+class EditableWatchedResourceModelSerializer(serializers.ModelSerializer):
     watchers = WatchersField(required=False)
 
     def restore_object(self, attrs, instance=None):
@@ -219,7 +212,7 @@ class EditableWatchedResourceModelSerializer(WatchedResourceModelSerializer):
         watcher_field = self.fields.pop("watchers", None)
         self.validate_watchers(attrs, "watchers")
         new_watcher_ids = attrs.pop("watchers", None)
-        obj = super(WatchedResourceModelSerializer, self).restore_object(attrs, instance)
+        obj = super(EditableWatchedResourceModelSerializer, self).restore_object(attrs, instance)
 
         #A partial update can exclude the watchers field or if the new instance can still not be saved
         if instance is None or new_watcher_ids is None:

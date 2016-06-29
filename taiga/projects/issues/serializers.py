@@ -25,13 +25,12 @@ from taiga.projects.mixins.serializers import ListOwnerExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListAssignedToExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListStatusExtraInfoSerializerMixin
 from taiga.projects.notifications.mixins import EditableWatchedResourceModelSerializer
-from taiga.projects.notifications.mixins import ListWatchedResourceModelSerializer
+from taiga.projects.notifications.mixins import WatchedResourceModelSerializer
 from taiga.projects.notifications.validators import WatchersValidator
 from taiga.projects.tagging.fields import TagsAndTagsColorsField
 from taiga.projects.serializers import BasicIssueStatusSerializer
 from taiga.projects.validators import ProjectExistsValidator
 from taiga.projects.votes.mixins.serializers import VoteResourceSerializerMixin
-from taiga.projects.votes.mixins.serializers import ListVoteResourceSerializerMixin
 
 from taiga.users.serializers import UserBasicInfoSerializer
 
@@ -40,8 +39,7 @@ from . import models
 import serpy
 
 
-class IssueSerializer(WatchersValidator, VoteResourceSerializerMixin, EditableWatchedResourceModelSerializer,
-                      serializers.ModelSerializer):
+class IssueSerializer(WatchersValidator, EditableWatchedResourceModelSerializer, serializers.ModelSerializer):
     tags = TagsAndTagsColorsField(default=[], required=False)
     external_reference = PgArrayField(required=False)
     is_closed = serializers.Field(source="is_closed")
@@ -75,7 +73,7 @@ class IssueSerializer(WatchersValidator, VoteResourceSerializerMixin, EditableWa
         return mdrender(obj.project, obj.description)
 
 
-class IssueListSerializer(ListVoteResourceSerializerMixin, ListWatchedResourceModelSerializer,
+class IssueListSerializer(VoteResourceSerializerMixin, WatchedResourceModelSerializer,
                           ListOwnerExtraInfoSerializerMixin, ListAssignedToExtraInfoSerializerMixin,
                           ListStatusExtraInfoSerializerMixin, serializers.LightSerializer):
     id = serpy.Field()

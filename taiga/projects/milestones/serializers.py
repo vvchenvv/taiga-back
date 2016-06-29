@@ -21,7 +21,6 @@ from django.utils.translation import ugettext as _
 from taiga.base.api import serializers
 from taiga.base.utils import json
 from taiga.projects.notifications.mixins import WatchedResourceModelSerializer
-from taiga.projects.notifications.mixins import ListWatchedResourceModelSerializer
 from taiga.projects.notifications.validators import WatchersValidator
 from taiga.projects.mixins.serializers import ValidateDuplicatedNameInProjectMixin
 from taiga.projects.userstories.serializers import UserStoryListSerializer
@@ -30,9 +29,8 @@ from . import models
 
 import serpy
 
-
-class MilestoneSerializer(WatchersValidator, WatchedResourceModelSerializer,
-                          ValidateDuplicatedNameInProjectMixin):
+#TODO: WatchedResourceModelSerializer
+class MilestoneSerializer(WatchersValidator, ValidateDuplicatedNameInProjectMixin):
     total_points = serializers.SerializerMethodField("get_total_points")
     closed_points = serializers.SerializerMethodField("get_closed_points")
     user_stories = serializers.SerializerMethodField("get_user_stories")
@@ -51,7 +49,7 @@ class MilestoneSerializer(WatchersValidator, WatchedResourceModelSerializer,
         return UserStoryListSerializer(obj.user_stories.all(), many=True).data
 
 
-class MilestoneListSerializer(ListWatchedResourceModelSerializer, serializers.LightSerializer):
+class MilestoneListSerializer(WatchedResourceModelSerializer, serializers.LightSerializer):
     id = serpy.Field()
     name = serpy.Field()
     slug = serpy.Field()

@@ -19,6 +19,11 @@
 from django.utils.translation import ugettext as _
 
 from taiga.base.api import serializers
+from taiga.base.fields import PgArrayField
+from taiga.base.fields import PickledObjectField
+from taiga.projects.notifications.mixins import EditableWatchedResourceModelSerializer
+from taiga.projects.notifications.validators import WatchersValidator
+from taiga.projects.tagging.fields import TagsAndTagsColorsField
 
 from . import models
 
@@ -30,3 +35,25 @@ class UserStoryExistsValidator:
             msg = _("There's no user story with that id")
             raise serializers.ValidationError(msg)
         return attrs
+
+
+class RolePointsField(serializers.WritableField):
+    def to_native(self, obj):
+        return {str(o.role.id): o.points.id for o in obj.all()}
+
+    def from_native(self, obj):
+        if isinstance(obj, dict):
+            return obj
+        return json.loads(obj)
+
+
+class UserStoryValidator(WatchersValidator, EditableWatchedResourceModelSerializer, serializers.ModelSerializer):
+    tags = TagsAndTagsColorsField(default=[], required=False)
+    external_reference = PgArrayField(required=False)
+    points = RolePointsField(source="role_points", required=False)
+    tribe_gig = PickledObjectField(required=False)
+
+    class Meta:
+        model = models.UserStory
+        depth = 0
+        read_only_fields = ('created_date', 'modified_date', 'owner')

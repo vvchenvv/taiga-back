@@ -24,8 +24,8 @@ from taiga.mdrender.service import render as mdrender
 
 from . import models
 
-
-class WikiPageSerializer(WatchersValidator, WatchedResourceModelSerializer, serializers.ModelSerializer):
+#TODO: WatchedResourceModelSerializer
+class WikiPageSerializer(WatchersValidator, serializers.ModelSerializer):
     html = serializers.SerializerMethodField("get_html")
     editions = serializers.SerializerMethodField("get_editions")
 

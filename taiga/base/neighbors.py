@@ -24,6 +24,8 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db.models.sql.datastructures import EmptyResultSet
 from taiga.base.api import serializers
 
+import serpy
+
 Neighbor = namedtuple("Neighbor", "left right")
 
 
@@ -89,9 +91,7 @@ def get_neighbors(obj, results_set=None):
 
 
 class NeighborsSerializerMixin:
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["neighbors"] = serializers.SerializerMethodField("get_neighbors")
+    neighbors = serpy.MethodField()
 
     def serialize_neighbor(self, neighbor):
         raise NotImplementedError

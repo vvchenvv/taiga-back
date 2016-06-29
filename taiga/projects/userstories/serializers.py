@@ -23,8 +23,6 @@ from django.utils.translation import ugettext_lazy as _
 
 from taiga.base.api import serializers
 from taiga.base.api.utils import get_object_or_404
-from taiga.base.fields import PickledObjectField
-from taiga.base.fields import PgArrayField
 from taiga.base.neighbors import NeighborsSerializerMixin
 from taiga.base.utils import json
 
@@ -35,15 +33,11 @@ from taiga.projects.mixins.serializers import ListOwnerExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListAssignedToExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListStatusExtraInfoSerializerMixin
 from taiga.projects.models import Project, UserStoryStatus
-from taiga.projects.notifications.mixins import EditableWatchedResourceModelSerializer
-from taiga.projects.notifications.mixins import ListWatchedResourceModelSerializer
-from taiga.projects.notifications.validators import WatchersValidator
+from taiga.projects.notifications.mixins import WatchedResourceModelSerializer
 from taiga.projects.serializers import BasicUserStoryStatusSerializer
-from taiga.projects.tagging.fields import TagsAndTagsColorsField
 from taiga.projects.userstories.validators import UserStoryExistsValidator
 from taiga.projects.validators import ProjectExistsValidator, UserStoryStatusExistsValidator
 from taiga.projects.votes.mixins.serializers import VoteResourceSerializerMixin
-from taiga.projects.votes.mixins.serializers import ListVoteResourceSerializerMixin
 
 from taiga.users.serializers import UserBasicInfoSerializer
 from taiga.users.serializers import ListUserBasicInfoSerializer
@@ -53,73 +47,6 @@ from taiga.users.services import get_big_photo_or_gravatar_url
 from . import models
 
 import serpy
-
-
-class RolePointsField(serializers.WritableField):
-    def to_native(self, obj):
-        return {str(o.role.id): o.points.id for o in obj.all()}
-
-    def from_native(self, obj):
-        if isinstance(obj, dict):
-            return obj
-        return json.loads(obj)
-
-
-class UserStorySerializer(WatchersValidator, VoteResourceSerializerMixin,
-                          EditableWatchedResourceModelSerializer, serializers.ModelSerializer):
-    tags = TagsAndTagsColorsField(default=[], required=False)
-    external_reference = PgArrayField(required=False)
-    points = RolePointsField(source="role_points", required=False)
-    total_points = serializers.SerializerMethodField("get_total_points")
-    comment = serializers.SerializerMethodField("get_comment")
-    milestone_slug = serializers.SerializerMethodField("get_milestone_slug")
-    milestone_name = serializers.SerializerMethodField("get_milestone_name")
-    origin_issue = serializers.SerializerMethodField("get_origin_issue")
-    blocked_note_html = serializers.SerializerMethodField("get_blocked_note_html")
-    description_html = serializers.SerializerMethodField("get_description_html")
-    status_extra_info = BasicUserStoryStatusSerializer(source="status", required=False, read_only=True)
-    assigned_to_extra_info = UserBasicInfoSerializer(source="assigned_to", required=False, read_only=True)
-    owner_extra_info = UserBasicInfoSerializer(source="owner", required=False, read_only=True)
-    tribe_gig = PickledObjectField(required=False)
-
-    class Meta:
-        model = models.UserStory
-        depth = 0
-        read_only_fields = ('created_date', 'modified_date', 'owner')
-
-    def get_total_points(self, obj):
-        return obj.get_total_points()
-
-    def get_comment(self, obj):
-        # NOTE: This method and field is necessary to historical comments work
-        return ""
-
-    def get_milestone_slug(self, obj):
-        if obj.milestone:
-            return obj.milestone.slug
-        else:
-            return None
-
-    def get_milestone_name(self, obj):
-        if obj.milestone:
-            return obj.milestone.name
-        else:
-            return None
-
-    def get_origin_issue(self, obj):
-        if obj.generated_from_issue:
-            return {
-                "id": obj.generated_from_issue.id,
-                "ref": obj.generated_from_issue.ref,
-                "subject": obj.generated_from_issue.subject,
-            }
-        return None
-
-    def get_blocked_note_html(self, obj):
-        return mdrender(obj.project, obj.blocked_note)
-
-    def get_description_html(self, obj):
-        return mdrender(obj.project, obj.description)
 
 
 class ListOriginIssueSerializer(serializers.LightSerializer):
@@ -134,7 +61,7 @@ class ListOriginIssueSerializer(serializers.LightSerializer):
         return super().to_value(instance)
 
 
-class UserStoryListSerializer(ListVoteResourceSerializerMixin, ListWatchedResourceModelSerializer,
+class UserStoryListSerializer(VoteResourceSerializerMixin, WatchedResourceModelSerializer,
         ListOwnerExtraInfoSerializerMixin, ListAssignedToExtraInfoSerializerMixin,
         ListStatusExtraInfoSerializerMixin, ListBasicAttachmentsInfoSerializerMixin,
         serializers.LightSerializer):
@@ -185,7 +112,7 @@ class UserStoryListSerializer(ListVoteResourceSerializerMixin, ListWatchedResour
         if obj.role_points_attr is None:
             return {}
 
-        return dict(ChainMap(*obj.role_points_attr))
+        return obj.role_points_attr
 
     def get_comment(self, obj):
         return ""
@@ -202,6 +129,32 @@ class UserStoryListSerializer(ListVoteResourceSerializerMixin, ListWatchedResour
         return obj.tasks_attr
 
 
+class UserStorySerializer(UserStoryListSerializer):
+    comment = serpy.MethodField()
+    origin_issue = serpy.MethodField()
+    blocked_note_html = serpy.MethodField()
+    description_html = serpy.MethodField()
+
+    def get_comment(self, obj):
+        # NOTE: This method and field is necessary to historical comments work
+        return ""
+
+    def get_origin_issue(self, obj):
+        if obj.generated_from_issue:
+            return {
+                "id": obj.generated_from_issue.id,
+                "ref": obj.generated_from_issue.ref,
+                "subject": obj.generated_from_issue.subject,
+            }
+        return None
+
+    def get_blocked_note_html(self, obj):
+        return mdrender(obj.project, obj.blocked_note)
+
+    def get_description_html(self, obj):
+        return mdrender(obj.project, obj.description)
+
+
 class UserStoryNeighborsSerializer(NeighborsSerializerMixin, UserStorySerializer):
     def serialize_neighbor(self, neighbor):
         if neighbor:
@@ -209,11 +162,10 @@ class UserStoryNeighborsSerializer(NeighborsSerializerMixin, UserStorySerializer
         return None
 
 
-class NeighborUserStorySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = models.UserStory
-        fields = ("id", "ref", "subject")
-        depth = 0
+class NeighborUserStorySerializer(serializers.LightSerializer):
+    id = serpy.Field()
+    ref = serpy.Field()
+    subject = serpy.Field()
 
 
 class UserStoriesBulkSerializer(ProjectExistsValidator, UserStoryStatusExistsValidator,
