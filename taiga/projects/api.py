@@ -60,6 +60,7 @@ from . import filters as project_filters
 from . import models
 from . import permissions
 from . import serializers
+from . import validators
 from . import services
 from . import utils as project_utils
 
@@ -69,6 +70,7 @@ from . import utils as project_utils
 
 class ProjectViewSet(LikedResourceMixin, HistoryResourceMixin, BlockeableSaveMixin, BlockeableDeleteMixin,
                      TagsColorsResourceMixin, ModelCrudViewSet):
+    validator_class = validators.ProjectValidator
     queryset = models.Project.objects.all()
     permission_classes = (permissions.ProjectPermission, )
     filter_backends = (project_filters.UserOrderFilterBackend,
@@ -132,12 +134,9 @@ class ProjectViewSet(LikedResourceMixin, HistoryResourceMixin, BlockeableSaveMix
 
     def get_serializer_class(self):
         if self.action == "list":
-            return serializers.LightProjectSerializer
+            return serializers.ProjectSerializer
 
-        if self.action in ["retrieve", "by_slug"]:
-            return serializers.LightProjectDetailSerializer
-
-        return serializers.ProjectSerializer
+        return serializers.ProjectDetailSerializer
 
     @detail_route(methods=["POST"])
     def change_logo(self, request, *args, **kwargs):

@@ -23,7 +23,6 @@ from django.db.models import Q
 
 from taiga.base.api import serializers
 from taiga.base.fields import JsonField
-from taiga.base.fields import PgArrayField
 
 from taiga.permissions import services as permissions_services
 from taiga.users.services import get_photo_or_gravatar_url
@@ -45,8 +44,6 @@ from .likes.mixins.serializers import FanResourceSerializerMixin
 from .mixins.serializers import ValidateDuplicatedNameInProjectMixin
 from .notifications.choices import NotifyLevel
 from .notifications.mixins import WatchedResourceModelSerializer
-from .tagging.fields import TagsField
-from .tagging.fields import TagsColorsField
 from .validators import ProjectExistsValidator
 
 import serpy
@@ -248,77 +245,7 @@ class ProjectMemberSerializer(serializers.ModelSerializer):
 ## Projects
 ######################################################
 
-class ProjectSerializer(FanResourceSerializerMixin, WatchedResourceModelSerializer,
-                        serializers.ModelSerializer):
-    anon_permissions = PgArrayField(required=False)
-    public_permissions = PgArrayField(required=False)
-    my_permissions = serializers.SerializerMethodField("get_my_permissions")
-
-    owner = UserBasicInfoSerializer(read_only=True)
-    i_am_owner = serializers.SerializerMethodField("get_i_am_owner")
-    i_am_admin = serializers.SerializerMethodField("get_i_am_admin")
-    i_am_member = serializers.SerializerMethodField("get_i_am_member")
-
-    tags = TagsField(default=[], required=False)
-    tags_colors = TagsColorsField(required=False, read_only=True)
-
-    notify_level = serializers.SerializerMethodField("get_notify_level")
-    total_closed_milestones = serializers.SerializerMethodField("get_total_closed_milestones")
-    total_watchers = serializers.SerializerMethodField("get_total_watchers")
-
-    logo_small_url = serializers.SerializerMethodField("get_logo_small_url")
-    logo_big_url = serializers.SerializerMethodField("get_logo_big_url")
-
-    class Meta:
-        model = models.Project
-        read_only_fields = ("created_date", "modified_date", "slug", "blocked_code")
-        exclude = ("logo", "last_us_ref", "last_task_ref", "last_issue_ref",
-                   "issues_csv_uuid", "tasks_csv_uuid", "userstories_csv_uuid",
-                   "transfer_token")
-
-    def get_my_permissions(self, obj):
-        if "request" in self.context:
-            return get_user_project_permissions(self.context["request"].user, obj)
-        return []
-
-    def get_i_am_owner(self, obj):
-        if "request" in self.context:
-            return is_project_owner(self.context["request"].user, obj)
-        return False
-
-    def get_i_am_admin(self, obj):
-        if "request" in self.context:
-            return is_project_admin(self.context["request"].user, obj)
-        return False
-
-    def get_i_am_member(self, obj):
-        if "request" in self.context:
-            user = self.context["request"].user
-            if not user.is_anonymous() and user.cached_membership_for_project(obj):
-                return True
-        return False
-
-    def get_total_closed_milestones(self, obj):
-        return obj.milestones.filter(closed=True).count()
-
-    def get_notify_level(self, obj):
-        if "request" in self.context:
-            user = self.context["request"].user
-            return user.is_authenticated() and user.get_notify_level(obj)
-
-        return None
-
-    def get_total_watchers(self, obj):
-        return obj.notify_policies.exclude(notify_level=NotifyLevel.none).count()
-
-    def get_logo_small_url(self, obj):
-        return services.get_logo_small_thumbnail_url(obj)
-
-    def get_logo_big_url(self, obj):
-        return services.get_logo_big_thumbnail_url(obj)
-
-
-class LightProjectSerializer(serializers.LightSerializer):
+class ProjectSerializer(serializers.LightSerializer):
     id = serpy.Field()
     name = serpy.Field()
     slug = serpy.Field()
@@ -466,7 +393,7 @@ class LightProjectSerializer(serializers.LightSerializer):
         return services.get_logo_big_thumbnail_url(obj)
 
 
-class LightProjectDetailSerializer(LightProjectSerializer):
+class ProjectDetailSerializer(ProjectSerializer):
     us_statuses = serpy.Field(attr="userstory_statuses_attr")
     points = serpy.Field(attr="points_attr")
     task_statuses = serpy.Field(attr="task_statuses_attr")

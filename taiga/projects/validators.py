@@ -20,6 +20,10 @@ from django.utils.translation import ugettext as _
 
 from taiga.base.api import serializers
 
+from taiga.base.fields import PgArrayField
+
+from .tagging.fields import TagsField
+
 from . import models
 
 
@@ -48,3 +52,13 @@ class TaskStatusExistsValidator:
             msg = _("There's no task status with that id")
             raise serializers.ValidationError(msg)
         return attrs
+
+
+class ProjectValidator(serializers.ModelSerializer):
+    anon_permissions = PgArrayField(required=False)
+    public_permissions = PgArrayField(required=False)
+    tags = TagsField(default=[], required=False)
+
+    class Meta:
+        model = models.Project
+        read_only_fields = ("created_date", "modified_date", "slug", "blocked_code", "owner")
