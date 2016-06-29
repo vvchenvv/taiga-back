@@ -51,15 +51,21 @@ from .validators import ProjectExistsValidator
 ## Custom values for selectors
 ######################################################
 
-class PointsSerializer(ValidateDuplicatedNameInProjectMixin):
+class EpicStatusSerializer(ValidateDuplicatedNameInProjectMixin):
     class Meta:
-        model = models.Points
+        model = models.EpicStatus
         i18n_fields = ("name",)
 
 
 class UserStoryStatusSerializer(ValidateDuplicatedNameInProjectMixin):
     class Meta:
         model = models.UserStoryStatus
+        i18n_fields = ("name",)
+
+
+class PointsSerializer(ValidateDuplicatedNameInProjectMixin):
+    class Meta:
+        model = models.Points
         i18n_fields = ("name",)
 
 
