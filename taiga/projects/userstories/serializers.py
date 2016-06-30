@@ -28,7 +28,7 @@ from taiga.base.utils import json
 
 from taiga.mdrender.service import render as mdrender
 from taiga.projects.attachments.serializers import ListBasicAttachmentsInfoSerializerMixin
-from taiga.projects.milestones.validators import SprintExistsValidator
+from taiga.projects.milestones.validators import MilestoneExistsValidator
 from taiga.projects.mixins.serializers import ListOwnerExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListAssignedToExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListStatusExtraInfoSerializerMixin
@@ -194,7 +194,7 @@ class _UserStoryMilestoneBulkSerializer(UserStoryExistsValidator, serializers.Se
     us_id = serializers.IntegerField()
 
 
-class UpdateMilestoneBulkSerializer(ProjectExistsValidator, SprintExistsValidator, serializers.Serializer):
+class UpdateMilestoneBulkSerializer(ProjectExistsValidator, MilestoneExistsValidator, serializers.Serializer):
     project_id = serializers.IntegerField()
     milestone_id = serializers.IntegerField()
     bulk_stories = _UserStoryMilestoneBulkSerializer(many=True)

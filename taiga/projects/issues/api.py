@@ -34,14 +34,18 @@ from taiga.projects.occ import OCCResourceMixin
 from taiga.projects.tagging.api import TaggedResourceMixin
 from taiga.projects.votes.mixins.viewsets import VotedResourceMixin, VotersViewSetMixin
 
+from .utils import attach_generated_user_stories
+
 from . import models
 from . import services
 from . import permissions
 from . import serializers
+from . import validators
 
 
 class IssueViewSet(OCCResourceMixin, VotedResourceMixin, HistoryResourceMixin, WatchedResourceMixin,
                    TaggedResourceMixin, BlockedByProjectMixin, ModelCrudViewSet):
+    validator_class = validators.IssueValidator
     queryset = models.Issue.objects.all()
     permission_classes = (permissions.IssuePermission, )
     filter_backends = (filters.CanViewIssuesFilterBackend,
@@ -146,6 +150,7 @@ class IssueViewSet(OCCResourceMixin, VotedResourceMixin, HistoryResourceMixin, W
         qs = super().get_queryset()
         qs = qs.select_related("owner", "assigned_to", "status", "project")
         qs = self.attach_votes_attrs_to_queryset(qs)
+        qs = attach_generated_user_stories(qs)
         return self.attach_watchers_attrs_to_queryset(qs)
 
     def pre_save(self, obj):
@@ -181,8 +186,7 @@ class IssueViewSet(OCCResourceMixin, VotedResourceMixin, HistoryResourceMixin, W
     def by_ref(self, request):
         ref = request.QUERY_PARAMS.get("ref", None)
         project_id = request.QUERY_PARAMS.get("project", None)
-        issue = get_object_or_404(models.Issue, ref=ref, project_id=project_id)
-        return self.retrieve(request, pk=issue.pk)
+        return self.retrieve(request, project_id=project_id, ref=ref)
 
     @list_route(methods=["GET"])
     def filters_data(self, request, *args, **kwargs):
@@ -237,6 +241,8 @@ class IssueViewSet(OCCResourceMixin, VotedResourceMixin, HistoryResourceMixin, W
                 status=project.default_issue_status, severity=project.default_severity,
                 priority=project.default_priority, type=project.default_issue_type,
                 callback=self.post_save, precall=self.pre_save)
+
+            issues = self.get_queryset().filter(id__in=[i.id for i in issues])
             issues_serialized = self.get_serializer_class()(issues, many=True)
 
             return response.Ok(data=issues_serialized.data)

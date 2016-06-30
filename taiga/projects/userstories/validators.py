@@ -19,6 +19,7 @@
 from django.utils.translation import ugettext as _
 
 from taiga.base.api import serializers
+from taiga.base.api import validators
 from taiga.base.fields import PgArrayField
 from taiga.base.fields import PickledObjectField
 from taiga.projects.notifications.mixins import EditableWatchedResourceModelSerializer
@@ -47,7 +48,7 @@ class RolePointsField(serializers.WritableField):
         return json.loads(obj)
 
 
-class UserStoryValidator(WatchersValidator, EditableWatchedResourceModelSerializer, serializers.ModelSerializer):
+class UserStoryValidator(WatchersValidator, EditableWatchedResourceModelSerializer, validators.ModelValidator):
     tags = TagsAndTagsColorsField(default=[], required=False)
     external_reference = PgArrayField(required=False)
     points = RolePointsField(source="role_points", required=False)

@@ -19,7 +19,7 @@
 from django.utils.translation import ugettext as _
 
 from taiga.base.api import serializers
-
+from taiga.base.api import validators
 from taiga.base.fields import PgArrayField
 
 from .tagging.fields import TagsField
@@ -54,7 +54,7 @@ class TaskStatusExistsValidator:
         return attrs
 
 
-class ProjectValidator(serializers.ModelSerializer):
+class ProjectValidator(validators.ModelValidator):
     anon_permissions = PgArrayField(required=False)
     public_permissions = PgArrayField(required=False)
     tags = TagsField(default=[], required=False)

@@ -29,27 +29,8 @@ from . import models
 
 import serpy
 
-#TODO: WatchedResourceModelSerializer
-class MilestoneSerializer(WatchersValidator, ValidateDuplicatedNameInProjectMixin):
-    total_points = serializers.SerializerMethodField("get_total_points")
-    closed_points = serializers.SerializerMethodField("get_closed_points")
-    user_stories = serializers.SerializerMethodField("get_user_stories")
 
-    class Meta:
-        model = models.Milestone
-        read_only_fields = ("id", "created_date", "modified_date")
-
-    def get_total_points(self, obj):
-        return sum(obj.total_points.values())
-
-    def get_closed_points(self, obj):
-        return sum(obj.closed_points.values())
-
-    def get_user_stories(self, obj):
-        return UserStoryListSerializer(obj.user_stories.all(), many=True).data
-
-
-class MilestoneListSerializer(WatchedResourceModelSerializer, serializers.LightSerializer):
+class MilestoneSerializer(WatchedResourceModelSerializer, serializers.LightSerializer):
     id = serpy.Field()
     name = serpy.Field()
     slug = serpy.Field()

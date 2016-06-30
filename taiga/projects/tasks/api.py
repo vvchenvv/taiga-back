@@ -38,10 +38,11 @@ from . import models
 from . import permissions
 from . import serializers
 from . import services
-
+from . import validators
 
 class TaskViewSet(OCCResourceMixin, VotedResourceMixin, HistoryResourceMixin, WatchedResourceMixin,
                   TaggedResourceMixin, BlockedByProjectMixin, ModelCrudViewSet):
+    validator_class = validators.TaskValidator
     queryset = models.Task.objects.all()
     permission_classes = (permissions.TaskPermission,)
     filter_backends = (filters.CanViewTasksFilterBackend,
@@ -164,8 +165,7 @@ class TaskViewSet(OCCResourceMixin, VotedResourceMixin, HistoryResourceMixin, Wa
     def by_ref(self, request):
         ref = request.QUERY_PARAMS.get("ref", None)
         project_id = request.QUERY_PARAMS.get("project", None)
-        task = get_object_or_404(models.Task, ref=ref, project_id=project_id)
-        return self.retrieve(request, pk=task.pk)
+        return self.retrieve(request, project_id=project_id, ref=ref)
 
     @list_route(methods=["GET"])
     def csv(self, request):

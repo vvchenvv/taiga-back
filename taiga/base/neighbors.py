@@ -90,7 +90,7 @@ def get_neighbors(obj, results_set=None):
     return Neighbor(left, right)
 
 
-class NeighborsSerializerMixin:
+class NeighborsSerializerMixin(serpy.Serializer):
     neighbors = serpy.MethodField()
 
     def serialize_neighbor(self, neighbor):

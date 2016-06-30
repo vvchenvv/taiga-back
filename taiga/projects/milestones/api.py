@@ -38,6 +38,7 @@ from taiga.projects.notifications.utils import attach_is_watcher_to_queryset
 from taiga.projects.userstories import utils as userstories_utils
 
 from . import serializers
+from . import validators
 from . import models
 from . import permissions
 from . import utils as milestones_utils
@@ -47,6 +48,8 @@ import datetime
 
 class MilestoneViewSet(HistoryResourceMixin, WatchedResourceMixin,
                        BlockedByProjectMixin, ModelCrudViewSet):
+    serializer_class = serializers.MilestoneSerializer
+    validator_class = validators.MilestoneValidator
     permission_classes = (permissions.MilestonePermission,)
     filter_backends = (filters.CanViewMilestonesFilterBackend,)
     filter_fields = (
@@ -55,12 +58,6 @@ class MilestoneViewSet(HistoryResourceMixin, WatchedResourceMixin,
         "closed"
     )
     queryset = models.Milestone.objects.all()
-
-    def get_serializer_class(self, *args, **kwargs):
-        if self.action == "list":
-            return serializers.MilestoneListSerializer
-
-        return serializers.MilestoneSerializer
 
     def list(self, request, *args, **kwargs):
         res = super().list(request, *args, **kwargs)

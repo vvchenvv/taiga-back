@@ -39,40 +39,6 @@ from . import models
 import serpy
 
 
-class IssueSerializer(WatchersValidator, EditableWatchedResourceModelSerializer, serializers.ModelSerializer):
-    tags = TagsAndTagsColorsField(default=[], required=False)
-    external_reference = PgArrayField(required=False)
-    is_closed = serializers.Field(source="is_closed")
-    comment = serializers.SerializerMethodField("get_comment")
-    generated_user_stories = serializers.SerializerMethodField("get_generated_user_stories")
-    blocked_note_html = serializers.SerializerMethodField("get_blocked_note_html")
-    description_html = serializers.SerializerMethodField("get_description_html")
-    status_extra_info = BasicIssueStatusSerializer(source="status", required=False, read_only=True)
-    assigned_to_extra_info = UserBasicInfoSerializer(source="assigned_to", required=False, read_only=True)
-    owner_extra_info = UserBasicInfoSerializer(source="owner", required=False, read_only=True)
-
-    class Meta:
-        model = models.Issue
-        read_only_fields = ('id', 'ref', 'created_date', 'modified_date', 'owner')
-
-    def get_comment(self, obj):
-        # NOTE: This method and field is necessary to historical comments work
-        return ""
-
-    def get_generated_user_stories(self, obj):
-        return [{
-            "id": us.id,
-            "ref": us.ref,
-            "subject": us.subject,
-        } for us in obj.generated_user_stories.all()]
-
-    def get_blocked_note_html(self, obj):
-        return mdrender(obj.project, obj.blocked_note)
-
-    def get_description_html(self, obj):
-        return mdrender(obj.project, obj.description)
-
-
 class IssueListSerializer(VoteResourceSerializerMixin, WatchedResourceModelSerializer,
                           ListOwnerExtraInfoSerializerMixin, ListAssignedToExtraInfoSerializerMixin,
                           ListStatusExtraInfoSerializerMixin, serializers.LightSerializer):
@@ -90,6 +56,29 @@ class IssueListSerializer(VoteResourceSerializerMixin, WatchedResourceModelSeria
     external_reference = serpy.Field()
     version = serpy.Field()
     watchers = serpy.Field()
+    tags = serpy.Field()
+    is_closed = serpy.Field()
+
+
+class IssueSerializer(IssueListSerializer):
+    comment = serpy.MethodField()
+    generated_user_stories = serpy.MethodField()
+    blocked_note_html = serpy.MethodField()
+    description_html = serpy.MethodField()
+
+    def get_comment(self, obj):
+        # NOTE: This method and field is necessary to historical comments work
+        return ""
+
+    def get_generated_user_stories(self, obj):
+        assert hasattr(obj, "generated_user_stories_attr"), "instance must have a generated_user_stories_attr attribute"
+        return obj.generated_user_stories_attr
+
+    def get_blocked_note_html(self, obj):
+        return mdrender(obj.project, obj.blocked_note)
+
+    def get_description_html(self, obj):
+        return mdrender(obj.project, obj.description)
 
 
 class IssueNeighborsSerializer(NeighborsSerializerMixin, IssueSerializer):

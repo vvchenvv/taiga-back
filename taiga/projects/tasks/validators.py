@@ -19,6 +19,11 @@
 from django.utils.translation import ugettext as _
 
 from taiga.base.api import serializers
+from taiga.base.api import validators
+from taiga.base.fields import PgArrayField
+from taiga.projects.notifications.mixins import EditableWatchedResourceModelSerializer
+from taiga.projects.notifications.validators import WatchersValidator
+from taiga.projects.tagging.fields import TagsAndTagsColorsField
 
 from . import models
 
@@ -30,3 +35,12 @@ class TaskExistsValidator:
             msg = _("There's no task with that id")
             raise serializers.ValidationError(msg)
         return attrs
+
+
+class TaskValidator(WatchersValidator, EditableWatchedResourceModelSerializer, validators.ModelValidator):
+    tags = TagsAndTagsColorsField(default=[], required=False)
+    external_reference = PgArrayField(required=False)
+
+    class Meta:
+        model = models.Task
+        read_only_fields = ('id', 'ref', 'created_date', 'modified_date', 'owner')

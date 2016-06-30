@@ -55,8 +55,8 @@ class ListCachedUsersSerializerMixin(serpy.Serializer):
 
         serialized_user = self._serialized_users.get(user.id, None)
         if serialized_user is None:
-            serializer_user = ListUserBasicInfoSerializer(user).data
-            self._serialized_users[user.id] = serializer_user
+            serialized_user = ListUserBasicInfoSerializer(user).data
+            self._serialized_users[user.id] = serialized_user
 
         return serialized_user
 
@@ -86,6 +86,9 @@ class ListStatusExtraInfoSerializerMixin(serpy.Serializer):
         return super().to_value(instance)
 
     def get_status_extra_info(self, obj):
+        if obj.status_id is None:
+            return None
+            
         serialized_status = self._serialized_status.get(obj.status_id, None)
         if serialized_status is None:
             serialized_status = {

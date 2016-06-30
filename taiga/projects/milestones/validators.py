@@ -19,14 +19,23 @@
 from django.utils.translation import ugettext as _
 
 from taiga.base.api import serializers
+from taiga.base.api import validators
+from taiga.projects.mixins.serializers import ValidateDuplicatedNameInProjectMixin
+from taiga.projects.notifications.validators import WatchersValidator
 
 from . import models
 
 
-class SprintExistsValidator:
+class MilestoneExistsValidator:
     def validate_sprint_id(self, attrs, source):
         value = attrs[source]
         if not models.Milestone.objects.filter(pk=value).exists():
-            msg = _("There's no sprint with that id")
+            msg = _("There's no milestone with that id")
             raise serializers.ValidationError(msg)
         return attrs
+
+
+class MilestoneValidator(WatchersValidator, ValidateDuplicatedNameInProjectMixin, validators.ModelValidator):
+    class Meta:
+        model = models.Milestone
+        read_only_fields = ("id", "created_date", "modified_date")

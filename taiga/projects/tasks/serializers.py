@@ -25,7 +25,7 @@ from taiga.base.neighbors import NeighborsSerializerMixin
 
 from taiga.mdrender.service import render as mdrender
 from taiga.projects.attachments.serializers import ListBasicAttachmentsInfoSerializerMixin
-from taiga.projects.milestones.validators import SprintExistsValidator
+from taiga.projects.milestones.validators import MilestoneExistsValidator
 from taiga.projects.mixins.serializers import ListOwnerExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListAssignedToExtraInfoSerializerMixin
 from taiga.projects.mixins.serializers import ListStatusExtraInfoSerializerMixin
@@ -46,43 +46,6 @@ from taiga.users.services import get_big_photo_or_gravatar_url
 from . import models
 
 import serpy
-
-#TODO: VoteResourceSerializerMixin,
-class TaskSerializer(WatchersValidator, EditableWatchedResourceModelSerializer,
-                     serializers.ModelSerializer):
-
-    tags = TagsAndTagsColorsField(default=[], required=False)
-    external_reference = PgArrayField(required=False)
-    comment = serializers.SerializerMethodField("get_comment")
-    milestone_slug = serializers.SerializerMethodField("get_milestone_slug")
-    blocked_note_html = serializers.SerializerMethodField("get_blocked_note_html")
-    description_html = serializers.SerializerMethodField("get_description_html")
-    is_closed = serializers.SerializerMethodField("get_is_closed")
-    status_extra_info = BasicTaskStatusSerializerSerializer(source="status", required=False, read_only=True)
-    assigned_to_extra_info = UserBasicInfoSerializer(source="assigned_to", required=False, read_only=True)
-    owner_extra_info = UserBasicInfoSerializer(source="owner", required=False, read_only=True)
-
-    class Meta:
-        model = models.Task
-        read_only_fields = ('id', 'ref', 'created_date', 'modified_date', 'owner')
-
-    def get_comment(self, obj):
-        return ""
-
-    def get_milestone_slug(self, obj):
-        if obj.milestone:
-            return obj.milestone.slug
-        else:
-            return None
-
-    def get_blocked_note_html(self, obj):
-        return mdrender(obj.project, obj.blocked_note)
-
-    def get_description_html(self, obj):
-        return mdrender(obj.project, obj.description)
-
-    def get_is_closed(self, obj):
-        return obj.status is not None and obj.status.is_closed
 
 
 class TaskListSerializer(VoteResourceSerializerMixin, WatchedResourceModelSerializer,
@@ -118,6 +81,21 @@ class TaskListSerializer(VoteResourceSerializerMixin, WatchedResourceModelSerial
         return obj.status is not None and obj.status.is_closed
 
 
+class TaskSerializer(TaskListSerializer):
+    comment = serpy.MethodField()
+    blocked_note_html = serpy.MethodField()
+    description_html = serpy.MethodField()
+
+    def get_comment(self, obj):
+        return ""
+
+    def get_blocked_note_html(self, obj):
+        return mdrender(obj.project, obj.blocked_note)
+
+    def get_description_html(self, obj):
+        return mdrender(obj.project, obj.description)
+
+
 class TaskNeighborsSerializer(NeighborsSerializerMixin, TaskSerializer):
     def serialize_neighbor(self, neighbor):
         if neighbor:
@@ -132,7 +110,7 @@ class NeighborTaskSerializer(serializers.ModelSerializer):
         depth = 0
 
 
-class TasksBulkSerializer(ProjectExistsValidator, SprintExistsValidator,
+class TasksBulkSerializer(ProjectExistsValidator, MilestoneExistsValidator,
                           TaskExistsValidator, serializers.Serializer):
     project_id = serializers.IntegerField()
     sprint_id = serializers.IntegerField()
